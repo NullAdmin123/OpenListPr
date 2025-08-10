@@ -37,8 +37,14 @@ func (d *Pan123Share) GetAddition() driver.Additional {
 }
 
 func (d *Pan123Share) Init(ctx context.Context) error {
-	_, err := d.request(UserInfo, http.MethodGet, nil, nil)
-	return err
+    var err error
+    if d.Username != "" && d.Password != "" {
+        _, err = d.request(UserInfo, http.MethodGet, nil, nil)
+        if err != nil {
+            return err
+        }
+    }
+    return nil
 }
 
 func (d *Pan123Share) InitReference(storage driver.Driver) error {
@@ -50,12 +56,16 @@ func (d *Pan123Share) InitReference(storage driver.Driver) error {
 	return fmt.Errorf("ref: storage is not 123Pan")
 }
 
-
 func (d *Pan123Share) Drop(ctx context.Context) error {
-	_, _ = d.request(Logout, http.MethodPost, func(req *resty.Request) {
-		req.SetBody(base.Json{})
-	}, nil)
-	return nil
+    if d.Username != "" && d.Password != "" {
+        _, err := d.request(Logout, http.MethodPost, func(req *resty.Request) {
+            req.SetBody(base.Json{})
+        }, nil)
+        if err != nil {
+            return err
+        }
+    }
+    return nil
 }
 
 func (d *Pan123Share) List(ctx context.Context, dir model.Obj, args model.ListArgs) ([]model.Obj, error) {
