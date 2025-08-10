@@ -23,9 +23,13 @@ const (
 	Api          = "https://www.123pan.com/api"
 	AApi         = "https://www.123pan.com/a/api"
 	BApi         = "https://www.123pan.com/b/api"
+	LoginApi         = "https://login.123pan.com/api"
 	MainApi      = BApi
 	FileList     = MainApi + "/share/get"
 	DownloadInfo = MainApi + "/share/download/info"
+	SignIn           = LoginApi + "/user/sign_in"
+	Logout           = MainApi + "/user/logout"
+	UserInfo         = MainApi + "/user/info"
 	//AuthKeySalt      = "8-8D$sL8gPjom7bk#cY"
 )
 
@@ -52,19 +56,54 @@ func GetApi(rawUrl string) string {
 	return u.String()
 }
 
-func (d *Pan123Share) request(url string, method string, callback base.ReqCallback, resp interface{}) ([]byte, error) {
-	if d.ref != nil {
-		return d.ref.Request(url, method, callback, resp)
+func (d *Pan123Share) login() error {
+	var body base.Json
+	if utils.IsEmailFormat(d.Username) {
+		body = base.Json{
+			"mail":     d.Username,
+			"password": d.Password,
+			"type":     2,
+		}
+	} else {
+		body = base.Json{
+			"passport": d.Username,
+			"password": d.Password,
+			"remember": true,
+		}
 	}
+	res, err := base.RestyClient.R().
+		SetHeaders(map[string]string{
+			"origin":      "https://www.123pan.com",
+			"referer":     "https://www.123pan.com/",
+			"user-agent":    "123pan/v3.0.0(Android_14.1.2;Meizu21Pro)",
+			"platform":      "android",
+			"app-version":   "65",
+			"x-app-version":  "3.0.0",
+		}).
+		SetBody(body).Post(SignIn)
+	if err != nil {
+		return err
+	}
+	if utils.Json.Get(res.Body(), "code").ToInt() != 200 {
+		err = fmt.Errorf(utils.Json.Get(res.Body(), "message").ToString())
+	} else {
+		d.AccessToken = utils.Json.Get(res.Body(), "data", "token").ToString()
+	}
+	return err
+}
+
+func (d *Pan123Share) request(url string, method string, callback base.ReqCallback, resp interface{}) ([]byte, error) {
+isRetry := false
+do:
 	req := base.RestyClient.R()
 	req.SetHeaders(map[string]string{
 		"origin":        "https://www.123pan.com",
 		"referer":       "https://www.123pan.com/",
 		"authorization": "Bearer " + d.AccessToken,
-		"user-agent":    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) openlist-client",
-		"platform":      "web",
-		"app-version":   "3",
-		//"user-agent":    base.UserAgent,
+		"user-agent":    "123pan/v3.0.0(Android_14.1.2;Meizu21Pro)",
+		"platform":      "android",
+		"app-version":   "65",
+		"x-app-version":  "3.0.0",
 	})
 	if callback != nil {
 		callback(req)
@@ -72,6 +111,11 @@ func (d *Pan123Share) request(url string, method string, callback base.ReqCallba
 	if resp != nil {
 		req.SetResult(resp)
 	}
+	//authKey, err := authKey(url)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//req.SetQueryParam("auth-key", *authKey)
 	res, err := req.Execute(method, GetApi(url))
 	if err != nil {
 		return nil, err
@@ -79,10 +123,19 @@ func (d *Pan123Share) request(url string, method string, callback base.ReqCallba
 	body := res.Body()
 	code := utils.Json.Get(body, "code").ToInt()
 	if code != 0 {
+		if !isRetry && code == 401 {
+			err := d.login()
+			if err != nil {
+				return nil, err
+			}
+			isRetry = true
+			goto do
+		}
 		return nil, errors.New(jsoniter.Get(body, "message").ToString())
 	}
 	return body, nil
 }
+
 
 func (d *Pan123Share) getFiles(ctx context.Context, parentId string) ([]File, error) {
 	page := 1
