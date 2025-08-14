@@ -57,14 +57,7 @@ func (d *Pan123Share) InitReference(storage driver.Driver) error {
 }
 
 func (d *Pan123Share) Drop(ctx context.Context) error {
-    if d.Username != "" && d.Password != "" {
-        _, err := d.request(Logout, http.MethodPost, func(req *resty.Request) {
-            req.SetBody(base.Json{})
-        }, nil)
-        if err != nil {
-            return err
-        }
-    }
+    d.ref = nil
     return nil
 }
 
