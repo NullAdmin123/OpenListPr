@@ -83,6 +83,7 @@ func (d *Pan123Share) Link(ctx context.Context, file model.Obj, args model.LinkA
 			"s3keyFlag": f.S3KeyFlag,
 			"size":      f.Size,
 		}
+		log.Infof("downloadInfo:", data)
 		resp, err := d.request(DownloadInfo, http.MethodPost, func(req *resty.Request) {
 			req.SetBody(data)
 		}, nil)
@@ -105,12 +106,12 @@ func (d *Pan123Share) Link(ctx context.Context, file model.Obj, args model.LinkA
 			u_ = u.String()
 		}
 
-		log.Debug("download url: ", u_)
+		log.Infof("download url: ", u_)
 		res, err := base.NoRedirectClient.R().SetHeader("Referer", "https://www.123pan.com/").Get(u_)
 		if err != nil {
 			return nil, err
 		}
-		log.Debug(res.String())
+		log.Infof(res.String())
 		link := model.Link{
 			URL: u_,
 		}

@@ -17,6 +17,7 @@ import (
 	"github.com/OpenListTeam/OpenList/v4/pkg/utils"
 	"github.com/go-resty/resty/v2"
 	jsoniter "github.com/json-iterator/go"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -123,6 +124,7 @@ do:
 	body := res.Body()
 	code := utils.Json.Get(body, "code").ToInt()
 	if code != 0 {
+		log.Errorf("request isRetry:%v, url:%s, message:%s", isRetry, url, jsoniter.Get(body, "message").ToString())
 		if !isRetry && code == 401 {
 			err := d.login()
 			if err != nil {
