@@ -29,25 +29,31 @@ type Pan123Share struct {
 }
 
 func (d *Pan123Share) Config() driver.Config {
+	log.Warnf("Pan123Share  call config",config)
 	return config
 }
 
 func (d *Pan123Share) GetAddition() driver.Additional {
+	log.Warnf("Pan123Share  call GetAddition",&d.Addition)
 	return &d.Addition
 }
 
 func (d *Pan123Share) Init(ctx context.Context) error {
     var err error
+	log.Warnf("Pan123Share  call Init")
     if d.Username != "" && d.Password != "" {
+		log.Warnf("Pan123Share Init , d.Username && d.Password != null ")
         _, err = d.request(UserInfo, http.MethodGet, nil, nil)
         if err != nil {
             return err
         }
     }
+	log.Warnf("Pan123Share  call Init end")
     return nil
 }
 
 func (d *Pan123Share) InitReference(storage driver.Driver) error {
+	log.Warnf("Pan123Share  call InitReference")
 	refStorage, ok := storage.(*_123.Pan123)
 	if ok {
 		d.ref = refStorage
@@ -57,11 +63,13 @@ func (d *Pan123Share) InitReference(storage driver.Driver) error {
 }
 
 func (d *Pan123Share) Drop(ctx context.Context) error {
+	log.Warnf("Pan123Share  call Drop")
     d.ref = nil
     return nil
 }
 
 func (d *Pan123Share) List(ctx context.Context, dir model.Obj, args model.ListArgs) ([]model.Obj, error) {
+	log.Warnf("Pan123Share  call List")
 	// TODO return the files list, required
 	files, err := d.getFiles(ctx, dir.GetID())
 	if err != nil {
@@ -73,6 +81,7 @@ func (d *Pan123Share) List(ctx context.Context, dir model.Obj, args model.ListAr
 }
 
 func (d *Pan123Share) Link(ctx context.Context, file model.Obj, args model.LinkArgs) (*model.Link, error) {
+	log.Warnf("Pan123Share  call Link")
 	// TODO return link of file, required
 	if f, ok := file.(File); ok {
 		data := base.Json{
@@ -105,16 +114,16 @@ func (d *Pan123Share) Link(ctx context.Context, file model.Obj, args model.LinkA
 			u_ = u.String()
 		}
 
-		log.Debug("download url: ", u_)
+		log.Warnf("Pan123Share download url: ", u_)
 		res, err := base.NoRedirectClient.R().SetHeader("Referer", "https://www.123pan.com/").Get(u_)
 		if err != nil {
 			return nil, err
 		}
-		log.Debug(res.String())
+		log.Warnf(res.String())
 		link := model.Link{
 			URL: u_,
 		}
-		log.Debugln("res code: ", res.StatusCode())
+		log.Warnf("Pan123Share res code: ", res.StatusCode())
 		if res.StatusCode() == 302 {
 			link.URL = res.Header().Get("location")
 		} else if res.StatusCode() < 300 {
