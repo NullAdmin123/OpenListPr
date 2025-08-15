@@ -85,9 +85,11 @@ func (d *Pan123Share) login() error {
 		return err
 	}
 	if utils.Json.Get(res.Body(), "code").ToInt() != 200 {
+		log.Warnf("Pan123Share login code != 200",utils.Json.Get(res.Body(), "message").ToString())
 		err = fmt.Errorf(utils.Json.Get(res.Body(), "message").ToString())
 	} else {
 		d.AccessToken = utils.Json.Get(res.Body(), "data", "token").ToString()
+		log.Warnf("Pan123Share login d.AccessToken:",d.AccessToken)
 	}
 	return err
 }
@@ -95,6 +97,8 @@ func (d *Pan123Share) login() error {
 func (d *Pan123Share) request(url string, method string, callback base.ReqCallback, resp interface{}) ([]byte, error) {
 isRetry := false
 do:
+	log.Warnf("Pan123Share request url:",url)
+	log.Warnf("Pan123Share request d.AccessToken:",d.AccessToken)
 	req := base.RestyClient.R()
 	req.SetHeaders(map[string]string{
 		"origin":        "https://www.123pan.com",
@@ -124,6 +128,7 @@ do:
 	code := utils.Json.Get(body, "code").ToInt()
 	if code != 0 {
 		if !isRetry && code == 401 {
+			log.Warnf("Pan123Share request code == 401 , call d.login()")
 			err := d.login()
 			if err != nil {
 				return nil, err
