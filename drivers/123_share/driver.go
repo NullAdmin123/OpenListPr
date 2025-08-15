@@ -39,7 +39,7 @@ func (d *Pan123Share) GetAddition() driver.Additional {
 func (d *Pan123Share) Init(ctx context.Context) error {
     var err error
     if d.Username != "" && d.Password != "" {
-        _, err = d.logrus()
+        _, err = d.login()
         if err != nil {
             return err
         }
