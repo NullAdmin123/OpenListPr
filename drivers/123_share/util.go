@@ -124,8 +124,9 @@ do:
 	body := res.Body()
 	code := utils.Json.Get(body, "code").ToInt()
 	if code != 0 {
-		log.Errorf("request isRetry:%v, url:%s, message:%s", isRetry, url, jsoniter.Get(body, "message").ToString())
-		if !isRetry && code == 401 {
+		var msg = jsoniter.Get(body, "message").ToString()
+		log.Errorf("request isRetry:%v, url:%s, message:%s", isRetry, url, msg)
+		if !isRetry && d.Username != "" && d.Password != "" {
 			err := d.login()
 			if err != nil {
 				return nil, err
@@ -133,7 +134,7 @@ do:
 			isRetry = true
 			goto do
 		}
-		return nil, errors.New(jsoniter.Get(body, "message").ToString())
+		return nil, errors.New(msg)
 	}
 	return body, nil
 }
