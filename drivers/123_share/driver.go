@@ -83,7 +83,6 @@ func (d *Pan123Share) Link(ctx context.Context, file model.Obj, args model.LinkA
 			"s3keyFlag": f.S3KeyFlag,
 			"size":      f.Size,
 		}
-		log.Infof("downloadInfo:", data)
 		resp, err := d.request(DownloadInfo, http.MethodPost, func(req *resty.Request) {
 			req.SetBody(data)
 		}, nil)
@@ -105,17 +104,15 @@ func (d *Pan123Share) Link(ctx context.Context, file model.Obj, args model.LinkA
 			}
 			u_ = u.String()
 		}
-
-		log.Infof("download url: ", u_)
+		log.Infof("download url: ShareKey=%s SharePwd=%s FileId=%d Url=%s",d.ShareKey, d.SharePwd, f.FileId, u_)
 		res, err := base.NoRedirectClient.R().SetHeader("Referer", "https://www.123pan.com/").Get(u_)
 		if err != nil {
 			return nil, err
 		}
-		log.Infof(res.String())
 		link := model.Link{
 			URL: u_,
 		}
-		log.Debugln("res code: ", res.StatusCode())
+		log.Infof("res code: %d  res:%s", res.StatusCode(), res.String())
 		if res.StatusCode() == 302 {
 			link.URL = res.Header().Get("location")
 		} else if res.StatusCode() < 300 {
@@ -124,6 +121,7 @@ func (d *Pan123Share) Link(ctx context.Context, file model.Obj, args model.LinkA
 		link.Header = http.Header{
 			"Referer": []string{fmt.Sprintf("%s://%s/", ou.Scheme, ou.Host)},
 		}
+		log.Infof("link URL:%s",link.URL)
 		return &link, nil
 	}
 	return nil, fmt.Errorf("can't convert obj")
